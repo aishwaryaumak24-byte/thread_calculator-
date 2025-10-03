@@ -123,20 +123,26 @@ with right_col:
         st.dataframe(df, use_container_width=True)
 
         output = BytesIO()
-        with pd.ExcelWriter(output, engine="openpyxl") as writer:
-            df.to_excel(writer, index=False, sheet_name="Results")
-        excel_data = output.getvalue()
 
-        st.download_button(
-            label="⬇️ Download Excel",
-            data=excel_data,
-            file_name="calculation_results.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            use_container_width=True
-        )
+        try:
+            # Try Excel first
+            with pd.ExcelWriter(output, engine="openpyxl") as writer:
+                df.to_excel(writer, index=False, sheet_name="Results")
+            excel_data = output.getvalue()
 
-    else:
-        st.info("Enter parameters and click **Calculate Cost** to see results.")
-
-st.markdown("---")
-st.caption("Dependencies: `streamlit`, `pandas`, `openpyxl`")
+            st.download_button(
+                label="⬇️ Download Excel",
+                data=excel_data,
+                file_name="calculation_results.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            )
+        except ImportError:
+            # Fallback to CSV if openpyxl is not installed
+            csv_data = df.to_csv(index=False).encode("utf-8")
+            st.warning("⚠️ Excel export unavailable (openpyxl not found). Falling back to CSV.")
+            st.download_button(
+                label="⬇️ Download CSV",
+                data=csv_data,
+                file_name="calculation_results.csv",
+                mime="text/csv",
+            )
